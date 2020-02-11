@@ -292,16 +292,20 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
     if mw.PubKey == nil {
       return ErrInvalidPubKey
     }
-    if mw.PrivKey == nil && mw.Authenticator != nil {
-      // we only need the private key if we are authenticating users
-      // (i.e. signing new tokens); so ignore if no Authenticator set
-      return ErrInvalidPrivKey
+    if mw.PrivKey == nil {
+      if mw.Authenticator != nil {
+        // we only need the private key if we are authenticating users
+        // (i.e. signing new tokens); so ignore if no Authenticator set
+        return ErrInvalidPrivKey
+      }
     }
-	}
 
-	if mw.Key == nil {
-		return ErrMissingSecretKey
-	}
+	} else {
+    if mw.Key == nil {
+      return ErrMissingSecretKey
+    }
+  }
+
 	return nil
 }
 
