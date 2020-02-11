@@ -100,12 +100,24 @@ func TestMissingKey(t *testing.T) {
 	assert.Equal(t, ErrMissingSecretKey, err)
 }
 
+func TestNoInvalidPrivKeyWhenNoAuthenticator(t *testing.T) {
+	_, err := New(&GinJWTMiddleware{
+		Realm:            "zone",
+		SigningAlgorithm: "RS256",
+		PrivKey:      nil,
+		PubKey:       loadPublicKey(),
+	})
+
+	assert.Nil(t, err)
+}
+
 func TestInvalidPrivKey(t *testing.T) {
 	_, err := New(&GinJWTMiddleware{
 		Realm:            "zone",
 		SigningAlgorithm: "RS256",
 		PrivKey:      nil,
 		PubKey:       loadPublicKey(),
+		Authenticator: defaultAuthenticator,
 	})
 
 	assert.Error(t, err)
@@ -1143,6 +1155,35 @@ func TestExpiredField(t *testing.T) {
 
 			assert.Equal(t, ErrWrongFormatOfExp.Error(), message.String())
 			assert.Equal(t, http.StatusBadRequest, r.Code)
+		})
+  }
+
+func TestInfiniteToken(t *testing.T) {
+  // missing exp, but middleware has InfiniteTokensAllowed = true
+	authMiddleware, _ := New(&GinJWTMiddleware{
+    InfiniteTokensPermitted: true,
+		Realm:         "test zone",
+		Key:           key,
+		Timeout:       time.Hour,
+		Authenticator: defaultAuthenticator,
+	})
+
+	handler := ginHandler(authMiddleware)
+
+	r := gofight.New()
+
+  token := jwt.New(jwt.GetSigningMethod("HS256"))
+	claims := token.Claims.(jwt.MapClaims)
+	claims["identity"] = "admin"
+	claims["orig_iat"] = 0
+	tokenString, _ := token.SignedString(key)
+
+	r.GET("/auth/hello").
+		SetHeader(gofight.H{
+			"Authorization": "Bearer " + tokenString,
+		}).
+		Run(handler, func(r gofight.HTTPResponse, rq gofight.HTTPRequest) {
+			assert.Equal(t, http.StatusOK, r.Code)
 		})
 }
 
