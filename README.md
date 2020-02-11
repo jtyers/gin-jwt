@@ -4,7 +4,9 @@ This is a fork of [@appleboy/gin-jwt](https://github.com/appleboy/gin-jwt), a JW
 
 It uses [jwt-go](https://github.com/dgrijalva/jwt-go) to provide a jwt authentication middleware. It provides additional handler functions to provide the `login` api that will generate the token and an additional `refresh` handler that can be used to refresh tokens.
 
-The difference this fork provides is that private and public keys are passed in directly (i.e. `*rsa.PrivateKey` and `*rsa.PublicKey`), so that they can be loaded via mechanisms other than files, for example environment variables.
+The difference this fork provides is that private and public keys are passed in directly (i.e. `*rsa.PrivateKey` and `*rsa.PublicKey`), so that they can be loaded via mechanisms other than files, for example environment variables. Use `PubKey` and `PrivKey` to pass these values in. Passing in the private key is only required if you also pass an `Authenticator` function, to allow for scenarios where the application is only verifing tokens, not creating/signing them.
+
+This fork makes no other changes, so you'll only be interested if you are using a public key algorithm for your tokens, such as `RS256`, `RS384` or `RS512`.
 
 ## Usage
 
