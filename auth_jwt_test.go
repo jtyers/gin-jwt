@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"crypto/rsa"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -39,6 +40,32 @@ var (
 	}
 )
 
+func loadPrivateKey() *rsa.PrivateKey {
+  keyData, err := ioutil.ReadFile("testdata/jwtRS256.key")
+  if err != nil {
+    panic(err)
+  }
+  signKey, err := jwt.ParseRSAPrivateKeyFromPEM(keyData)
+  if err != nil {
+    panic(err)
+  }
+
+  return signKey
+}
+
+func loadPublicKey() *rsa.PublicKey {
+  keyData, err := ioutil.ReadFile("testdata/jwtRS256.key.pub")
+  if err != nil {
+    panic(err)
+  }
+  key, err := jwt.ParseRSAPublicKeyFromPEM(keyData)
+  if err != nil {
+    panic(err)
+  }
+
+  return key
+}
+
 func makeTokenString(SigningAlgorithm string, username string) string {
 	if SigningAlgorithm == "" {
 		SigningAlgorithm = "HS256"
@@ -51,8 +78,7 @@ func makeTokenString(SigningAlgorithm string, username string) string {
 	claims["orig_iat"] = time.Now().Unix()
 	var tokenString string
 	if SigningAlgorithm == "RS256" {
-		keyData, _ := ioutil.ReadFile("testdata/jwtRS256.key")
-		signKey, _ := jwt.ParseRSAPrivateKeyFromPEM(keyData)
+    signKey := loadPrivateKey()
 		tokenString, _ = token.SignedString(signKey)
 	} else {
 		tokenString, _ = token.SignedString(key)
@@ -74,35 +100,12 @@ func TestMissingKey(t *testing.T) {
 	assert.Equal(t, ErrMissingSecretKey, err)
 }
 
-func TestMissingPrivKey(t *testing.T) {
-	_, err := New(&GinJWTMiddleware{
-		Realm:            "zone",
-		SigningAlgorithm: "RS256",
-		PrivKeyFile:      "nonexisting",
-	})
-
-	assert.Error(t, err)
-	assert.Equal(t, ErrNoPrivKeyFile, err)
-}
-
-func TestMissingPubKey(t *testing.T) {
-	_, err := New(&GinJWTMiddleware{
-		Realm:            "zone",
-		SigningAlgorithm: "RS256",
-		PrivKeyFile:      "testdata/jwtRS256.key",
-		PubKeyFile:       "nonexisting",
-	})
-
-	assert.Error(t, err)
-	assert.Equal(t, ErrNoPubKeyFile, err)
-}
-
 func TestInvalidPrivKey(t *testing.T) {
 	_, err := New(&GinJWTMiddleware{
 		Realm:            "zone",
 		SigningAlgorithm: "RS256",
-		PrivKeyFile:      "testdata/invalidprivkey.key",
-		PubKeyFile:       "testdata/jwtRS256.key.pub",
+		PrivKey:      nil,
+		PubKey:       loadPublicKey(),
 	})
 
 	assert.Error(t, err)
@@ -113,8 +116,8 @@ func TestInvalidPubKey(t *testing.T) {
 	_, err := New(&GinJWTMiddleware{
 		Realm:            "zone",
 		SigningAlgorithm: "RS256",
-		PrivKeyFile:      "testdata/jwtRS256.key",
-		PubKeyFile:       "testdata/invalidpubkey.key",
+		PrivKey:      loadPrivateKey(),
+		PubKey:       nil,
 	})
 
 	assert.Error(t, err)
@@ -353,8 +356,8 @@ func TestParseTokenRS256(t *testing.T) {
 		Timeout:          time.Hour,
 		MaxRefresh:       time.Hour * 24,
 		SigningAlgorithm: "RS256",
-		PrivKeyFile:      "testdata/jwtRS256.key",
-		PubKeyFile:       "testdata/jwtRS256.key.pub",
+		PrivKey:          loadPrivateKey(),
+		PubKey:           loadPublicKey(),
 		Authenticator:    defaultAuthenticator,
 	})
 
@@ -403,8 +406,8 @@ func TestRefreshHandlerRS256(t *testing.T) {
 		Timeout:          time.Hour,
 		MaxRefresh:       time.Hour * 24,
 		SigningAlgorithm: "RS256",
-		PrivKeyFile:      "testdata/jwtRS256.key",
-		PubKeyFile:       "testdata/jwtRS256.key.pub",
+		PrivKey:          loadPrivateKey(),
+		PubKey:           loadPublicKey(),
 		SendCookie:       true,
 		CookieName:       "jwt",
 		Authenticator:    defaultAuthenticator,
