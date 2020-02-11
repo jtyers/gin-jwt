@@ -7,7 +7,7 @@ It uses [jwt-go](https://github.com/dgrijalva/jwt-go) to provide a jwt authentic
 This fork provides a few key differences.
 * Private and Public keys are passed in directly (i.e. `*rsa.PrivateKey` and `*rsa.PublicKey`), so that they can be loaded via mechanisms other than files, for example environment variables. Use `PubKey` and `PrivKey` to pass these values in.
 * Passing in the private key is only required if you also pass an `Authenticator` function, to allow for scenarios where the application is only verifing tokens, not creating/signing them.
-* There is a new `InfiniteTokensAllowed` option, which if set to `true` permits tokens that have no `exp` claim set. Normally, these fail verification.
+* There is a new `InfiniteTokensPermitted` option, which if set to `true` permits tokens that have no `exp` claim set. Normally, these fail verification.
 
 This fork makes no other changes, so you'll only be interested if you are using a public key algorithm for your tokens, such as `RS256`, `RS384` or `RS512`.
 
