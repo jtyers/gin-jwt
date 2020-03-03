@@ -639,7 +639,7 @@ func (mw *GinJWTMiddleware) ParseToken(c *gin.Context) (*jwt.Token, error) {
 		return nil, err
 	}
 
-	return jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+  result, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
 		if jwt.GetSigningMethod(mw.SigningAlgorithm) != t.Method {
 			return nil, ErrInvalidSigningAlgorithm
 		}
@@ -647,11 +647,17 @@ func (mw *GinJWTMiddleware) ParseToken(c *gin.Context) (*jwt.Token, error) {
 			return mw.PubKey, nil
 		}
 
-		// save token string if vaild
-		c.Set("JWT_TOKEN", token)
-
 		return mw.Key, nil
 	})
+
+	if err != nil {
+		return nil, err
+	}
+
+  // save token string if vaild
+  c.Set("JWT_TOKEN", token)
+
+  return result, nil
 }
 
 // ParseTokenString parse jwt token string
